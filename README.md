@@ -1,73 +1,110 @@
-# 📌 AuthApp CI
+[authapp-ci-README.md](https://github.com/user-attachments/files/27141187/authapp-ci-README.md)
+<div align="center">
 
-Pipeline de integración continua para una aplicación Java utilizando Jenkins, Maven y SonarQube. El proyecto analiza el código automáticamente con cada cambio en GitHub, compila, ejecuta pruebas y envía los resultados a SonarQube para revisión de calidad.
+# 🔐 AuthApp CI
 
-## 🧱 Composición del Proyecto
+### Pipeline CI con Jenkins · Java 21 · Maven · SonarQube · Docker
 
-- 🔧 **Java 21** — Código fuente de la app (`/authapp`)
-- ⚙️ **Maven** — Build y ejecución de pruebas
-- 🚀 **Jenkins (Docker)** — Automatiza el proceso CI/CD
-- 📊 **SonarQube (Docker)** — Análisis estático de código
-- 🐳 **Docker Compose** — Orquestación de servicios
+![Java](https://img.shields.io/badge/Java_21-ED8B00?style=for-the-badge&logo=openjdk&logoColor=white)
+![Jenkins](https://img.shields.io/badge/Jenkins-D24939?style=for-the-badge&logo=jenkins&logoColor=white)
+![Maven](https://img.shields.io/badge/Maven-C71A36?style=for-the-badge&logo=apachemaven&logoColor=white)
+![SonarQube](https://img.shields.io/badge/SonarQube-4E9BCD?style=for-the-badge&logo=sonarqube&logoColor=white)
+![Docker](https://img.shields.io/badge/Docker-2496ED?style=for-the-badge&logo=docker&logoColor=white)
 
-## 🖼️ Vista Previa
+</div>
 
-| Jenkins                     | SonarQube                       |
-| --------------------------- | ------------------------------- |
-| ![jenkins](img/jenkins.png) | ![sonarqube](img/sonarqube.png) |
+---
+
+## 📌 ¿Qué hace este proyecto?
+
+Pipeline de **Integración Continua (CI)** para una aplicación Java de autenticación. Con cada cambio en el repositorio, Jenkins compila el proyecto con Maven, ejecuta las pruebas unitarias y envía los resultados a SonarQube para análisis estático de calidad de código. Todo el entorno corre en contenedores Docker.
+
+---
+
+## 🏗️ Arquitectura
+
+```
+GitHub (push) ──▶ Jenkins ──▶ Maven (build + test) ──▶ SonarQube (análisis)
+                     │                                         │
+                     └── Reporte de éxito/fallo ◀─────────────┘
+```
+
+**Servicios Docker:**
+
+```
+docker-compose.yml
+├── jenkins       → :8080  (CI server)
+└── sonarqube     → :9000  (análisis de calidad)
+```
+
+---
+
+## 🗂️ Estructura del proyecto
+
+```
+authapp-ci/
+├── authapp/              # Código fuente Java
+│   ├── src/
+│   │   ├── main/java/    # Lógica de autenticación
+│   │   └── test/java/    # Pruebas unitarias
+│   └── pom.xml
+├── jenkins/
+│   └── Dockerfile        # Imagen Jenkins personalizada con Java + Maven
+├── docs/                 # Documentación de configuración
+├── Jenkinsfile           # Definición del pipeline CI
+└── docker-compose.yml    # Orquestación de servicios
+```
+
+---
 
 ## ⚙️ Requisitos
 
-- Docker
-- Docker Compose
+- Docker y Docker Compose instalados
 - Git
+- Puertos libres: `8080` (Jenkins), `9000` (SonarQube)
 
-## 🚀 Instalación
+---
+
+## 🚀 Levantar el entorno
 
 ```bash
-# Clona el repositorio
-git clone https://github.com/brayandiazc/authapp-ci.git
+# 1. Clonar el repositorio
+git clone https://github.com/LujoMontero/authapp-ci.git
 cd authapp-ci
 
-# Asegúrate de tener esta estructura:
-# .
-# ├── docker-compose.yml
-# ├── jenkins/
-# │   └── Dockerfile
-# └── authapp/
-#     └── (código Java + pom.xml)
-
-# Construye y levanta los contenedores
+# 2. Construir y levantar los contenedores
 docker compose up --build -d
 
-# Extrae la contraseña inicial de Jenkins
+# 3. Obtener la contraseña inicial de Jenkins
 docker exec jenkins cat /var/jenkins_home/secrets/initialAdminPassword
+
+# 4. Acceder a Jenkins
+open http://localhost:8080
+
+# 5. Acceder a SonarQube
+open http://localhost:9000
 ```
 
-## 🔐 Configuración de Jenkins
+---
 
-1. Accede a [http://localhost:8080](http://localhost:8080)
+## 🔧 Configuración de Jenkins
 
-2. Ingresa la contraseña inicial (ver paso anterior)
+Una vez dentro de Jenkins en `http://localhost:8080`:
 
-3. Instala los plugins sugeridos
-
-4. Configura las herramientas:
-
-   - **Java 21** (verifica con `readlink -f $(which java)`)
-   - **Maven 3.x** (`/usr/share/maven`)
-   - **SonarQube**:
-
-     - Nombre: `SonarQube`
-     - URL: `http://sonarqube:9000`
-
-5. Agrega un nuevo _Pipeline Job_:
-
-   - Origen: Git → `https://github.com/brayandiazc/authapp-ci.git`
+1. Ingresar la contraseña inicial obtenida en el paso anterior
+2. Instalar los **plugins sugeridos**
+3. Configurar herramientas en **Manage Jenkins → Tools**:
+   - **JDK 21**: `readlink -f $(which java)` para obtener la ruta
+   - **Maven 3.x**: `/usr/share/maven`
+   - **SonarQube**: URL `http://sonarqube:9000`
+4. Crear nuevo **Pipeline Job**:
+   - Origen: Git → `https://github.com/LujoMontero/authapp-ci.git`
    - Branch: `main`
    - Script Path: `Jenkinsfile`
 
-## 📄 Jenkinsfile
+---
+
+## 📄 Jenkinsfile — Pipeline completo
 
 ```groovy
 pipeline {
@@ -99,50 +136,93 @@ pipeline {
               mvn sonar:sonar \
                 -Dsonar.projectKey=authapp \
                 -Dsonar.host.url=http://sonarqube:9000 \
-                -Dsonar.login=tu_token_aqui
+                -Dsonar.login=$SONAR_TOKEN
             '''
           }
         }
       }
     }
   }
+
+  post {
+    success { echo '✅ Pipeline completado correctamente' }
+    failure { echo '❌ Pipeline falló — revisar logs' }
+  }
 }
 ```
 
-🔐 **Importante**: genera tu token en SonarQube:
-`http://localhost:9000 > My Account > Security > Generate Tokens`
+---
 
-## 🧪 Pruebas
+## 📊 Análisis de calidad con SonarQube
 
-El sistema ejecuta automáticamente `mvn clean test` dentro del pipeline CI.
+Generar token en SonarQube antes de ejecutar el pipeline:
 
-## 🛑 Parar el entorno
-
-```bash
-docker compose down
+```
+http://localhost:9000 → My Account → Security → Generate Tokens
 ```
 
-Para limpiar todo:
+Agrega el token como **credential** en Jenkins:
+
+```
+Manage Jenkins → Credentials → Global → Add → Secret text
+ID: SONAR_TOKEN
+```
+
+**Métricas que analiza SonarQube:**
+
+| Categoría | Qué detecta |
+|---|---|
+| Bugs | Errores de lógica y NPE potenciales |
+| Vulnerabilidades | Problemas de seguridad en el código |
+| Code Smells | Código difícil de mantener |
+| Cobertura | % de código cubierto por pruebas |
+| Duplicaciones | Código repetido |
+
+---
+
+## 🧪 Ejecutar pruebas manualmente
 
 ```bash
+cd authapp
+mvn clean test
+
+# Ver reporte de pruebas
+open target/surefire-reports/index.html
+```
+
+---
+
+## 🛑 Detener el entorno
+
+```bash
+# Detener servicios
+docker compose down
+
+# Detener y limpiar volúmenes (borra datos Jenkins y SonarQube)
 docker compose down -v --remove-orphans
 ```
 
-## 🛣️ Roadmap
+---
 
-- [x] Jenkins con Maven
-- [x] Análisis con SonarQube
-- [ ] Notificaciones Slack
-- [ ] Despliegue automático (CD)
+## 🗺️ Roadmap
 
-## 🖇️ Contribuye
+- [x] Pipeline CI con Jenkins + Maven
+- [x] Análisis estático con SonarQube
+- [ ] Notificaciones a Slack en fallo/éxito
+- [ ] Despliegue automático (CD) a servidor de staging
+- [ ] Quality Gate que bloquee merge si hay bugs críticos
 
-```bash
-# Fork → Rama → Cambios → Pull Request
-```
+---
 
-## 📄 Licencia
+## 💡 Conceptos aplicados
 
-MIT — ver [LICENSE](LICENSE.md)
+- **CI (Integración Continua)**: compilación y pruebas automáticas en cada commit
+- **Análisis estático**: SonarQube detecta problemas sin ejecutar el código
+- **Pipeline as Code**: el `Jenkinsfile` vive en el repositorio junto al código
+- **Infraestructura como contenedores**: entorno reproducible con Docker Compose
 
-⌨️ con ❤️ por [Brayan Diaz C](https://github.com/brayandiazc)
+---
+
+## 👨‍💻 Autor
+
+**Luis Montero** · [GitHub](https://github.com/LujoMontero) · [LinkedIn](https://www.linkedin.com/in/luis-montero-if/)
