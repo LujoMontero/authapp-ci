@@ -1,4 +1,3 @@
-[authapp-ci-README.md](https://github.com/user-attachments/files/27141187/authapp-ci-README.md)
 <div align="center">
 
 # 🔐 AuthApp CI
